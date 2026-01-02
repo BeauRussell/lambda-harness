@@ -1,12 +1,20 @@
 {
   "name": "analyzer",
-  "module": "index.ts",
+  "version": "0.1.0",
   "type": "module",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
+  "scripts": {
+    "build": "bun run bun.build.ts",
+    "dev": "bun run src/index.ts"
   },
-  "peerDependencies": {
+  "devDependencies": {
+    "@types/bun": "latest",
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.5",
+    "@babel/traverse": "^7.28.5",
+    "globby": "^16.1.0",
+    "yaml": "^2.8.2"
   }
 }
