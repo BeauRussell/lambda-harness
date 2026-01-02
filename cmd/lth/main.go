@@ -7,6 +7,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func runTest(cmd *cobra.Command, args []string) error {
+	path := "."
+	if len(args) > 0 {
+		path = args[0]
+	}
+
+	nodeVersions, _ := cmd.Flags().GetStringSlice("node")
+	matrix, _ := cmd.Flags().GetBool("matrix")
+
+	fmt.Fprintf(cmd.OutOrStdout(), "Testing Lambda at: %s\n", path)
+	fmt.Fprintf(cmd.OutOrStdout(), "Node versions: %v\n", nodeVersions)
+	fmt.Fprintf(cmd.OutOrStdout(), "Matrix mode: %v\n", matrix)
+	return nil
+}
+
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "lth",
@@ -17,18 +32,8 @@ func main() {
 		Use:   "test [path]",
 		Short: "Test a Lambda",
 		Args:  cobra.MaximumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			path := "."
-			if len(args) > 0 {
-				path = args[0]
-			}
-			fmt.Printf("Testing Lambda at: %s\n", path)
-			return nil
-		},
+		RunE:  runTest,
 	}
-
-	testCmd.Flags().StringSliceP("node", "n", []string{"20"}, "Node version(s)")
-	testCmd.Flags().BoolP("matrix", "m", false, "Run all versions")
 
 	rootCmd.AddCommand(testCmd)
 
