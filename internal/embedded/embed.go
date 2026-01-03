@@ -47,7 +47,8 @@ func RunAnalyzer(projectPath string) (*AnalyzerResult, error) {
 		return nil, fmt.Errorf("invalid path: %w", err)
 	}
 
-	cmd := exec.Command("bun", "run", "analyzer/src/index.ts", absPath)
+	cmd := exec.Command("bun", "run", "../../analyzer/src/index.ts", absPath)
+	fmt.Printf("Exec Command: %+v\n", cmd)
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -55,6 +56,8 @@ func RunAnalyzer(projectPath string) (*AnalyzerResult, error) {
 		}
 		return nil, fmt.Errorf("failed to run analyzer: %w", err)
 	}
+
+	fmt.Println("Lambda output: ", string(output))
 
 	var result AnalyzerResult
 	if err := json.Unmarshal(output, &result); err != nil {

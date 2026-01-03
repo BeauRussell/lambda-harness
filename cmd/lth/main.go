@@ -2,8 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
+	embed "github.com/BeauRussell/lambda-harness/internal/embedded"
 	"github.com/spf13/cobra"
 )
 
@@ -19,6 +21,35 @@ func runTest(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "Testing Lambda at: %s\n", path)
 	fmt.Fprintf(cmd.OutOrStdout(), "Node versions: %v\n", nodeVersions)
 	fmt.Fprintf(cmd.OutOrStdout(), "Matrix mode: %v\n", matrix)
+
+	result, err := embed.RunAnalyzer(path)
+	if err != nil {
+		log.Printf("Failed to run anaylzer: %v", err)
+		return err
+	}
+
+	if result.Handler != nil {
+		fmt.Printf("Handler: %s.%s (%s)\n", result.Handler.File, result.Handler.Export, result.Handler.Type)
+	} else {
+		fmt.Printf("No handler detected for: %s", path)
+	}
+
+	if len(result.AWSServices) > 0 {
+		fmt.Printf("AWS Services: ")
+		for _, service := range result.AWSServices {
+			fmt.Printf("%s ", service)
+		}
+		fmt.Println()
+	}
+
+	if len(result.Warnings) > 0 {
+		fmt.Printf("Warnings: ")
+		for _, warning := range result.Warnings {
+			fmt.Printf("%s", warning)
+		}
+		fmt.Println()
+	}
+
 	return nil
 }
 
