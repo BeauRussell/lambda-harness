@@ -1,4 +1,8 @@
 import { parseArgs } from "util";
+import * as parser from "@babel/parser";
+import traverse from "@babel/traverse";
+import fs from "fs";
+import path from "path";
 
 const { positionals } = parseArgs({
 	args: Bun.argv,
