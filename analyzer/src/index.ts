@@ -1,5 +1,5 @@
 import { parseArgs } from "util";
-import * as parser from "@babel/parser";
+import parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
