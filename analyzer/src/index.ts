@@ -1,8 +1,8 @@
 import { parseArgs } from "util";
 import * as parser from "@babel/parser";
 import traverse from "@babel/traverse";
-import fs from "fs";
-import path from "path";
+import { promises as fs, Dirent } from "fs";
+import * as path from "path";
 
 const { positionals } = parseArgs({
 	args: Bun.argv,
@@ -10,14 +10,31 @@ const { positionals } = parseArgs({
 	allowPositionals: true,
 });
 
-function main(path: string | undefined): void {
+async function getFilesRecursively(dirPath: string): Promise<string[]> {
+	const files: string[] = [];
+	const entries: Dirent[] = await fs.readdir(dirPath, { withFileTypes: true });
+
+	for (const entry of entries) {
+		const fullPath = path.join(dirPath, entry.name);
+		if (entry.isDirectory()) {
+			files.push(...await getFilesRecursively(fullPath));
+		} else if (entry.isFile()) {
+			files.push(fullPath);
+		}
+	}
+
+	return files;
+}
+
+async function main(path: string | undefined): Promise<void> {
 	if (!path) {
 		console.error("No path passed into Analyzer");
 		process.exit(1);
 	}
 
-	console.log(path);
+	const files = await getFilesRecursively(path);
+
 	process.exit(0);
 }
 
-main(positionals[2]);
+await main(positionals[2]);
