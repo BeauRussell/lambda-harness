@@ -3,8 +3,8 @@ import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-	tseslint.configs.recommended,
 	eslint.configs.recommended,
+	...tseslint.configs.recommendedTypeChecked,
 	{
 		languageOptions: {
 			parserOptions: {
@@ -15,5 +15,8 @@ export default defineConfig(
 		rules: {
 			"semi": ["error", "always"]
 		}
-	}
+	},
+	{
+		ignores: ['node_modules/'],
+	},
 );
