@@ -10,9 +10,10 @@ const { positionals } = parseArgs({
 	allowPositionals: true,
 });
 
+// TODO: Getting recursive files does not add the recursive directories to path
 async function getFilesRecursively(dirPath: string): Promise<string[]> {
 	const files: string[] = [];
-	const entries: Dirent[] = await fs.readdir(dirPath, { withFileTypes: true, recursive: true });
+	const entries: Dirent[] = await fs.readdir(dirPath, { withFileTypes: true });
 
 	for (const entry of entries) {
 		if (entry.isDirectory()) {
@@ -34,6 +35,21 @@ function checkValidFileType(filePath: string): boolean {
 	return validExtensions.includes(extension);
 }
 
+async function parseFile(path: string) {
+	const file = Bun.file(path);
+	const code = await file.text();
+
+	const ast = parser.parse(code);
+
+	traverse(ast, {
+		enter(path) {
+			if (path.isImport()) {
+				console.log(path);
+			}
+		}
+	});
+}
+
 async function main(path: string | undefined): Promise<void> {
 	if (!path) {
 		console.error("No path passed into Analyzer");
@@ -42,7 +58,9 @@ async function main(path: string | undefined): Promise<void> {
 
 	const files = await getFilesRecursively(path);
 
-	console.log(files);
+	for (const file of files) {
+		await parseFile(file);
+	}
 
 	process.exit(0);
 }
