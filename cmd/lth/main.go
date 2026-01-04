@@ -22,7 +22,7 @@ func runTest(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "Node versions: %v\n", nodeVersions)
 	fmt.Fprintf(cmd.OutOrStdout(), "Matrix mode: %v\n", matrix)
 
-	result, err := embed.RunAnalyzer(path)
+	result, err := embed.RunAnalyzer("/home/yourknightmares/repos/lth/lambdas/simple-cjs")
 	if err != nil {
 		log.Printf("Failed to run anaylzer: %v", err)
 		return err

@@ -12,18 +12,26 @@ const { positionals } = parseArgs({
 
 async function getFilesRecursively(dirPath: string): Promise<string[]> {
 	const files: string[] = [];
-	const entries: Dirent[] = await fs.readdir(dirPath, { withFileTypes: true });
+	const entries: Dirent[] = await fs.readdir(dirPath, { withFileTypes: true, recursive: true });
 
 	for (const entry of entries) {
-		const fullPath = path.join(dirPath, entry.name);
 		if (entry.isDirectory()) {
-			files.push(...await getFilesRecursively(fullPath));
-		} else if (entry.isFile()) {
+			continue;
+		}
+		const fullPath = path.join(dirPath, entry.name);
+
+		if (checkValidFileType(fullPath)) {
 			files.push(fullPath);
 		}
 	}
 
 	return files;
+}
+
+function checkValidFileType(filePath: string): boolean {
+	const validExtensions = ['.js', '.ts', '.mjs', '.cjs'];
+	const extension = path.extname(filePath);
+	return validExtensions.includes(extension);
 }
 
 async function main(path: string | undefined): Promise<void> {
@@ -33,6 +41,8 @@ async function main(path: string | undefined): Promise<void> {
 	}
 
 	const files = await getFilesRecursively(path);
+
+	console.log(files);
 
 	process.exit(0);
 }
