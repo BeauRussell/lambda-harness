@@ -71,3 +71,21 @@ export type DiscoveredTest = {
 	name: string;
 	fixture: string;
 }
+
+type BaseFileContext = {
+	path: string;
+	packageJsonPath?: string;
+	allowJs?: boolean;
+} 
+
+export type ModuleType = "commonjs" | "module";
+
+export type CommonJSContext = BaseFileContext & {
+	type: "commonjs";
+}
+
+export type ModuleJSContext = BaseFileContext & {
+	type: "module";
+}
+
+export type FileContext = CommonJSContext | ModuleJSContext;

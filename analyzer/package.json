@@ -6,13 +6,14 @@
   "scripts": {
     "build": "bun run bun.build.ts",
     "dev": "bun run src/index.ts",
-	"lint": "bun exec eslint .",
-	"lint:fix": "bun exect eslint . --fix"
+    "lint": "bun exec eslint .",
+    "lint:fix": "bun exect eslint . --fix"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@types/bun": "^1.3.5",
     "eslint": "^9.39.2",
+    "knip": "^5.80.0",
     "typescript": "^5",
     "typescript-eslint": "^8.51.0"
   },

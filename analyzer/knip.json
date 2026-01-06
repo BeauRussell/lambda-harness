@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": ["src/index.ts"],
+  "project": ["src/**/*.ts"],
+  "ignore": ["node_modules/**"],
+  "rules": {
+    "exports": "error",
+    "types": "error",
+    "enumMembers": "error",
+    "classMembers": "error"
+  }
+}

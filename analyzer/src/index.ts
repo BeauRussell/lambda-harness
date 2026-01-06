@@ -3,6 +3,7 @@ import parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
+import type { FileContext } from "../config/types";  
 
 const { positionals } = parseArgs({
 	args: Bun.argv,
@@ -11,8 +12,9 @@ const { positionals } = parseArgs({
 });
 
 // TODO: Getting recursive files does not add the recursive directories to path
-async function getFilesRecursively(dirPath: string): Promise<string[]> {
-	const files: string[] = [];
+// TODO: Recursive mode also does not exclude node_modules. Maybe it shouldn't?
+async function getFilesRecursively(dirPath: string): Promise<FileContext[]> {
+	const files: FileContext[] = [];
 	const entries: Dirent[] = await fs.readdir(dirPath, { withFileTypes: true });
 
 	for (const entry of entries) {
@@ -21,22 +23,38 @@ async function getFilesRecursively(dirPath: string): Promise<string[]> {
 		}
 		const fullPath = path.join(dirPath, entry.name);
 
-		if (checkValidFileType(fullPath)) {
-			files.push(fullPath);
+		const fileContext = getValidFileContext(fullPath);
+		if (fileContext) {
+			files.push(fileContext);
 		}
 	}
 
 	return files;
 }
 
-function checkValidFileType(filePath: string): boolean {
-	const validExtensions = ['.js', '.ts', '.mjs', '.cjs'];
+// TODO: What happens with TypeScript? Figure out running compiled or native?
+function getValidFileContext(filePath: string): FileContext | undefined {
 	const extension = path.extname(filePath);
-	return validExtensions.includes(extension);
+	
+	switch(extension) {
+		case '.mjs': 
+			return {
+				type: "module",
+				path: filePath,
+			};
+		case '.cjs':
+			return {
+				type: "commonjs",
+				path: filePath,
+			};
+		case '.js':
+			// TODO: Detect package.json/tsconfig file module/commonjs
+			return undefined;
+	}
 }
 
-async function parseFile(path: string) {
-	const file = Bun.file(path);
+async function parseFile(fileContext: FileContext) {
+	const file = Bun.file(fileContext.path);
 	const code = await file.text();
 
 	const ast = parser.parse(code);
