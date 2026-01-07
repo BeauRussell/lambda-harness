@@ -3,12 +3,23 @@ import parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
+import * as winston from "winston";
 import type { FileContext, PackageInfo } from "../config/types";
 
-const { positionals } = parseArgs({
-	args: Bun.argv,
-	strict: true,
-	allowPositionals: true,
+const logger = winston.createLogger({
+	level: 'info',
+	format: winston.format.combine(
+		winston.format.timestamp({
+			format: 'YYYY-MM-DD HH:mm:ss',
+		}),
+		winston.format.printf(info => `${info.timestamp} [${info.level}]: ${info.message}`)
+	),
+	transports: [
+		new winston.transports.File({
+			filename: 'analyzer.log',
+			level: 'info',
+		}),
+	],
 });
 
 // TODO: Getting recursive files does not add the recursive directories to path
@@ -34,7 +45,6 @@ async function getFilesRecursively(dirPath: string): Promise<FileContext[]> {
 	return files;
 }
 
-// TODO: What happens with TypeScript? Figure out running compiled or native?
 function getValidFileContext(filePath: string, packageInfo: PackageInfo | undefined): FileContext | undefined {
 	const extension = path.extname(filePath);
 	
@@ -52,8 +62,15 @@ function getValidFileContext(filePath: string, packageInfo: PackageInfo | undefi
 				packageInfo,
 			};
 		case '.js':
-			// TODO: Detect package.json/tsconfig file module/commonjs
-			return undefined;
+			if (packageInfo?.type) {
+				return {
+					type: packageInfo.type,
+					path: filePath,
+					packageInfo
+				}
+			} else {
+				return undefined;
+			}
 	}
 }
 
@@ -61,11 +78,7 @@ async function attemptToGetPackageFile(dirPath: string): Promise<PackageInfo | u
 	try {
 		const file = Bun.file(`${dirPath}/package.json`);
 		const packageString = await file.text();
-		const pkg = JSON.parse(packageString) as PackageInfo;
-		
-		console.log(pkg);
-
-		return pkg;
+		return JSON.parse(packageString) as PackageInfo;
 	} catch {
 		return undefined;
 	}
@@ -80,9 +93,7 @@ async function parseFile(fileContext: FileContext) {
 
 	traverse(ast, {
 		enter(path) {
-			if (path.isImport()) {
-				console.log(path);
-			}
+			logger.info(path);
 		}
 	});
 }
@@ -101,5 +112,11 @@ async function main(path: string | undefined): Promise<void> {
 
 	process.exit(0);
 }
+
+const { positionals } = parseArgs({
+	args: Bun.argv,
+	strict: true,
+	allowPositionals: true,
+});
 
 await main(positionals[2]);
