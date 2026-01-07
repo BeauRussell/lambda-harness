@@ -3,24 +3,9 @@ import parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
-import * as winston from "winston";
 import type { FileContext, PackageInfo } from "../config/types";
+import { logger } from "./logger";
 
-const logger = winston.createLogger({
-	level: 'info',
-	format: winston.format.combine(
-		winston.format.timestamp({
-			format: 'YYYY-MM-DD HH:mm:ss',
-		}),
-		winston.format.printf(info => `${info.timestamp} [${info.level}]: ${info.message}`)
-	),
-	transports: [
-		new winston.transports.File({
-			filename: 'analyzer.log',
-			level: 'info',
-		}),
-	],
-});
 
 // TODO: Getting recursive files does not add the recursive directories to path
 // TODO: Recursive mode also does not exclude node_modules. Maybe it shouldn't?
@@ -67,8 +52,11 @@ function getValidFileContext(filePath: string, packageInfo: PackageInfo | undefi
 					type: packageInfo.type,
 					path: filePath,
 					packageInfo
-				}
+				};
 			} else {
+				logger.debug({
+					message: `Failed to find FileContext for file: ${filePath}`,
+				});
 				return undefined;
 			}
 	}
