@@ -4,6 +4,7 @@ export type AnalyzerResult = {
 	awsServices: AWSServiceUsage[];
 	tests: DiscoveredTest[];
 	warnings: string[];
+	dependencies: Dependency[];
 }
 
 // How the handler is setup for running in docker later
@@ -33,6 +34,11 @@ export type AWSServiceUsage = {
 export type DiscoveredTest = {
 	name: string;
 	fixture: string;
+}
+
+export type Dependency = {
+	Name: string; 
+	Version: string; 
 }
 
 type BaseFileContext = {

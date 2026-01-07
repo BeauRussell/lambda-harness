@@ -13,6 +13,7 @@ type AnalyzerResult struct {
 	AWSServices []AWSServiceUsage `json:"awsServices"`
 	Tests       []DiscoveredTest  `json:"tests"`
 	Warnings    []string          `json:"warnings"`
+	Dependencies []Dependency `json:"dependencies"`
 }
 
 type HandlerConfig struct {
@@ -38,6 +39,11 @@ type AWSServiceUsage struct {
 type DiscoveredTest struct {
 	Name    string `json:"name"`
 	Fixture string `json:"fixture"`
+}
+
+type Dependency struct {
+	Name string `json:"name"`
+	Version string `json:"version"`
 }
 
 // TODO: Swap this to Docker-based execution
