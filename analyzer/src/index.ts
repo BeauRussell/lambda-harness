@@ -3,7 +3,7 @@ import parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
-import type { FileContext } from "../config/types";  
+import type { FileContext, PackageInfo } from "../config/types";
 
 const { positionals } = parseArgs({
 	args: Bun.argv,
@@ -17,13 +17,15 @@ async function getFilesRecursively(dirPath: string): Promise<FileContext[]> {
 	const files: FileContext[] = [];
 	const entries: Dirent[] = await fs.readdir(dirPath, { withFileTypes: true });
 
+	const packageInfo = await attemptToGetPackageFile(dirPath);
+
 	for (const entry of entries) {
 		if (entry.isDirectory()) {
 			continue;
 		}
 		const fullPath = path.join(dirPath, entry.name);
 
-		const fileContext = getValidFileContext(fullPath);
+		const fileContext = getValidFileContext(fullPath, packageInfo);
 		if (fileContext) {
 			files.push(fileContext);
 		}
@@ -33,7 +35,7 @@ async function getFilesRecursively(dirPath: string): Promise<FileContext[]> {
 }
 
 // TODO: What happens with TypeScript? Figure out running compiled or native?
-function getValidFileContext(filePath: string): FileContext | undefined {
+function getValidFileContext(filePath: string, packageInfo: PackageInfo | undefined): FileContext | undefined {
 	const extension = path.extname(filePath);
 	
 	switch(extension) {
@@ -41,16 +43,33 @@ function getValidFileContext(filePath: string): FileContext | undefined {
 			return {
 				type: "module",
 				path: filePath,
+				packageInfo,
 			};
 		case '.cjs':
 			return {
 				type: "commonjs",
 				path: filePath,
+				packageInfo,
 			};
 		case '.js':
 			// TODO: Detect package.json/tsconfig file module/commonjs
 			return undefined;
 	}
+}
+
+async function attemptToGetPackageFile(dirPath: string): Promise<PackageInfo | undefined> {
+	try {
+		const file = Bun.file(`${dirPath}/package.json`);
+		const packageString = await file.text();
+		const pkg = JSON.parse(packageString) as PackageInfo;
+		
+		console.log(pkg);
+
+		return pkg;
+	} catch {
+		return undefined;
+	}
+
 }
 
 async function parseFile(fileContext: FileContext) {
