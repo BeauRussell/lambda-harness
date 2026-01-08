@@ -1,10 +1,9 @@
 import { parseArgs } from "util";
-import parser from "@babel/parser";
-import traverse from "@babel/traverse";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
 import type { FileContext, PackageInfo } from "../config/types";
 import { logger } from "./logger";
+import { parseFile } from "./parser";
 
 
 // TODO: Getting recursive files does not add the recursive directories to path
@@ -71,19 +70,6 @@ async function attemptToGetPackageFile(dirPath: string): Promise<PackageInfo | u
 		return undefined;
 	}
 
-}
-
-async function parseFile(fileContext: FileContext) {
-	const file = Bun.file(fileContext.path);
-	const code = await file.text();
-
-	const ast = parser.parse(code);
-
-	traverse(ast, {
-		enter(path) {
-			logger.info(path);
-		}
-	});
 }
 
 async function main(path: string | undefined): Promise<void> {
