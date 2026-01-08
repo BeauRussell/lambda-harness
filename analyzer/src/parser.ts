@@ -1,12 +1,12 @@
 import parser from "@babel/parser";
 import traverse from "@babel/traverse";
 import * as t from "@babel/types";
-import type { FileContext } from "../config/types";
-import { logger } from "./logger";
+import type { FileContext, Dependency } from "../config/types";
 
-export async function parseFile(fileContext: FileContext) {
+export async function parseFile(fileContext: FileContext): Promise<Dependency[]> {
 	const file = Bun.file(fileContext.path);
 	const code = await file.text();
+	const dependencies: Dependency[] = [];
 
 	const ast = parser.parse(code);
 
@@ -23,10 +23,11 @@ export async function parseFile(fileContext: FileContext) {
 				if (t.isStringLiteral(arg)) {
 					const moduleName = arg.value;
 
-					logger.info(moduleName);
-
+					dependencies.push({ name: moduleName, version: undefined });
 				}
 			}
 		}
 	});
+
+	return dependencies;
 }

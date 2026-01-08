@@ -1,7 +1,7 @@
 import { parseArgs } from "util";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
-import type { FileContext, PackageInfo } from "../config/types";
+import type { FileContext, PackageInfo, Dependency } from "../config/types";
 import { logger } from "./logger";
 import { parseFile } from "./parser";
 
@@ -79,10 +79,15 @@ async function main(path: string | undefined): Promise<void> {
 	}
 
 	const files = await getFilesRecursively(path);
+	const dependencies: Dependency[] = [];
 
 	for (const file of files) {
-		await parseFile(file);
+		const filePackages = await parseFile(file);
+
+		dependencies.push(...filePackages);
 	}
+
+	logger.info(dependencies);
 
 	process.exit(0);
 }

@@ -37,8 +37,8 @@ export type DiscoveredTest = {
 }
 
 export type Dependency = {
-	Name: string; 
-	Version: string; 
+	name: string; 
+	version: string | undefined; 
 }
 
 type BaseFileContext = {
