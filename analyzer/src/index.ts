@@ -95,9 +95,10 @@ async function main(path: string | undefined): Promise<void> {
 				...packagesToDependencies(file.packageInfo.peerDependencies),
 				...packagesToDependencies(file.packageInfo.devDependencies),
 			);
-		} else {
-			const filePackages = await parseFile(file);
+		} 
+		const filePackages = await parseFile(file);
 
+		if (dependencies.length === 0) {
 			dependencies.push(...filePackages);
 		}
 	}

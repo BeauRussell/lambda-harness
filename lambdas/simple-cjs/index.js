@@ -1,5 +1,7 @@
 const winston = require('winston');
 
+process.env.STANDALONE_TEST;
+
 const logger = winston.createLogger({
 	level: 'info',
 	format: winston.format.json(),
@@ -10,7 +12,9 @@ const logger = winston.createLogger({
 });
 
 function main() {
+	const set_test = process.env.SET_TEST;
 	logger.info("SIMPLE CJS!");
+	logger.info(process.env.LOG_TEST);
 }
 
 main();
