@@ -5,7 +5,6 @@ import type { FileContext, PackageInfo, Dependency } from "../config/types";
 import { logger } from "./logger";
 import { parseFile } from "./parser";
 
-
 // TODO: Getting recursive files does not add the recursive directories to path
 // TODO: Recursive mode also does not exclude node_modules. Maybe it shouldn't?
 async function getFilesRecursively(dirPath: string): Promise<FileContext[]> {
@@ -72,6 +71,14 @@ async function attemptToGetPackageFile(dirPath: string): Promise<PackageInfo | u
 
 }
 
+function packagesToDependencies(packages: Record<string,string> | undefined): Dependency[] {
+	if (packages === undefined) {
+		return [];
+	}
+
+	return Object.entries(packages).map(([name, value]) => ({ name, version: value }));
+}
+
 async function main(path: string | undefined): Promise<void> {
 	if (!path) {
 		console.error("No path passed into Analyzer");
@@ -82,12 +89,20 @@ async function main(path: string | undefined): Promise<void> {
 	const dependencies: Dependency[] = [];
 
 	for (const file of files) {
-		const filePackages = await parseFile(file);
+		if (file.packageInfo) {
+			dependencies.push(
+				...packagesToDependencies(file.packageInfo.dependencies),
+				...packagesToDependencies(file.packageInfo.peerDependencies),
+				...packagesToDependencies(file.packageInfo.devDependencies),
+			);
+		} else {
+			const filePackages = await parseFile(file);
 
-		dependencies.push(...filePackages);
+			dependencies.push(...filePackages);
+		}
 	}
 
-	logger.info(dependencies);
+	logger.info('Dependencies:', dependencies);
 
 	process.exit(0);
 }
