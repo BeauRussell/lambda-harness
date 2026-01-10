@@ -1,12 +1,12 @@
 import type { NodePath, Scope } from '@babel/traverse';
 import * as t from '@babel/types';
-import type { ResolvedUrl, UrlComponent, VariableMap } from '../../config/types';
-import {  unwrapExpression } from '../utils/ts-utils';
+import type { AnalysisContext, ResolvedUrl, UrlComponent } from '../../config/types';
+import { getEnvVarName, isProcessEnvAccess, unwrapExpression } from '../utils/parse-utils';
 
 export function resolveExpression(
 	node: t.Expression | t.SpreadElement,
 	scope: Scope,
-	varMap: VariableMap,
+	ctx: AnalysisContext,
 	depth = 0
 ): ResolvedUrl {
 	if (depth > 10) {
@@ -35,22 +35,22 @@ export function resolveExpression(
 
 	// Template literal: `https://${host}/api/${path}`
 	if (t.isTemplateLiteral(node)) {
-		return resolveTemplateLiteral(node, scope, varMap, depth);
+		return resolveTemplateLiteral(node, scope, ctx, depth);
 	}
 
 	// Identifier: someUrl (variable)
 	if (t.isIdentifier(node)) {
-		return resolveIdentifier(node, scope, varMap, depth);
+		return resolveIdentifier(node, scope, ctx, depth);
 	}
 
 	// Member expression: process.env.API_URL
 	if (t.isMemberExpression(node)) {
-		return resolveMemberExpression(node, scope, varMap, depth);
+		return resolveMemberExpression(node, ctx);
 	}
 	
 	// Binary expression: baseUrl + "/endpoint"
 	if (t.isBinaryExpression(node) && node.operator === '+') {
-		return resolveBinaryExpression(node, scope, varMap, depth);
+		return resolveBinaryExpression(node, scope, ctx, depth);
 	}
 
 	// Call expression: getBaseUrl() or url.toString()
@@ -74,7 +74,7 @@ export function resolveExpression(
 function resolveTemplateLiteral(
 	node: t.TemplateLiteral,
 	scope: Scope,
-	varMap: VariableMap,
+	ctx: AnalysisContext,
 	depth: number
 ): ResolvedUrl {
 	const components: UrlComponent[] = [];
@@ -107,7 +107,7 @@ function resolveTemplateLiteral(
 			}
 
 			const unwrapped = t.isTSAsExpression(expr) ? expr.expression : expr;
-			const resolved = resolveExpression(unwrapped, scope, varMap, depth + 1);
+			const resolved = resolveExpression(unwrapped, scope, ctx, depth + 1);
 
 			components.push(...resolved.components);
 			envVars.push(...resolved.envVars);
@@ -125,15 +125,15 @@ function resolveTemplateLiteral(
 function resolveIdentifier(
 	node: t.Identifier,
 	scope: Scope,
-	varMap: VariableMap,
+	ctx: AnalysisContext,
 	depth: number
 ): ResolvedUrl {
 	const name = node.name;
 
 	// Check if we've tracked this variable's assignment
-	const initializer = varMap.get(name);
+	const initializer = ctx.varMap.get(name);
 	if (initializer) {
-		const resolved = resolveExpression(initializer, scope, varMap, depth + 1);
+		const resolved = resolveExpression(initializer, scope, ctx, depth + 1);
 
 		return {
 			...resolved,
@@ -146,6 +146,41 @@ function resolveIdentifier(
 	return {
 		components: [{ type: 'variable', value: undefined, varName: name }],
 		raw: `\${${name}}`,
+		envVars: [],
+		isFullyStatic: false,
+	};
+}
+
+function resolveMemberExpression(
+	node: t.MemberExpression,
+	ctx: AnalysisContext,
+): ResolvedUrl {
+	if (isProcessEnvAccess(node)) {
+		const envVarName = getEnvVarName(node);
+
+		if (envVarName) {
+			ctx.envVars.add(envVarName);
+
+			return {
+				components: [{ type: 'env', value: undefined, envVar: envVarName }],
+				raw: `\${process.env.${envVarName}}`,
+				envVars: [envVarName],
+				isFullyStatic: false,
+			};
+		}
+
+		// Dynamic access: process.env[someVar]
+		return {
+			components: [{ type: 'env', value: undefined }],
+			raw: '${process.env.<dynamic>}',
+			envVars: [],
+			isFullyStatic: false,
+		};
+	}
+
+	return {
+		components: [{ type: 'unknown', value: undefined }],
+		raw: '<member expression>',
 		envVars: [],
 		isFullyStatic: false,
 	};

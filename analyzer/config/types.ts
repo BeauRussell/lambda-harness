@@ -91,4 +91,14 @@ export type HttpCall = {
 	location: string;
 }
 
+export type ParserResult = {
+	envVars: Set<string>;
+	httpCalls: HttpCall[];
+}
+
 export type VariableMap = Map<string, t.Expression>;
+
+export type AnalysisContext = {
+	varMap: VariableMap;
+	envVars: Set<string>;
+}
