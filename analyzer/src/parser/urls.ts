@@ -133,7 +133,21 @@ function resolveIdentifier(
 	// Check if we've tracked this variable's assignment
 	const initializer = varMap.get(name);
 	if (initializer) {
+		const resolved = resolveExpression(initializer, scope, varMap, depth + 1);
 
+		return {
+			...resolved,
+			components: resolved.components.map((c) =>
+				c.type === 'literal' ? { ...c, type: 'variable' as const, varName: name } : c
+			),
+		};
 	}
+
+	return {
+		components: [{ type: 'variable', value: undefined, varName: name }],
+		raw: `\${${name}}`,
+		envVars: [],
+		isFullyStatic: false,
+	};
 }
 
