@@ -186,3 +186,29 @@ function resolveMemberExpression(
 	};
 }
 
+function resolveBinaryExpression(
+	node: t.BinaryExpression,
+	scope: Scope,
+	ctx: AnalysisContext,
+	depth: number
+): ResolvedUrl {
+	// PrivateName can't appear in concatenation, but TS doesn't know that
+	if (t.isPrivateName(node.left)) {
+		return {
+			components: [{ type: 'unknown', value: undefined }],
+			raw: '<private>',
+			envVars: [],
+			isFullyStatic: false,
+		};
+	}
+	const left = resolveExpression(node.left, scope, ctx, depth + 1);
+	const right = resolveExpression(node.right, scope, ctx, depth + 1);
+
+	return {
+		components: [...left.components, ...right.components],
+		raw: left.raw + right.raw,
+		envVars: [...left.envVars, ...right.envVars],
+		isFullyStatic: left.isFullyStatic && right.isFullyStatic,
+	};
+}
+
