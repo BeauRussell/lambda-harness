@@ -3,7 +3,7 @@ import { promises as fs, Dirent } from "fs";
 import * as path from "path";
 import type { FileContext, PackageInfo, Dependency } from "../config/types";
 import { logger } from "./utils/logger";
-import { parseFile } from "./parser/parser";
+import { analyzeLambda } from "./parser/parser";
 
 // TODO: Getting recursive files does not add the recursive directories to path
 // TODO: Recursive mode also does not exclude node_modules. Maybe it shouldn't?
@@ -96,11 +96,13 @@ async function main(path: string | undefined): Promise<void> {
 				...packagesToDependencies(file.packageInfo.devDependencies),
 			);
 		} 
-		const filePackages = await parseFile(file);
+		
+		const loadedFile = Bun.file(file.path);
+		const code = await loadedFile.text();
 
-		if (dependencies.length === 0) {
-			dependencies.push(...filePackages);
-		}
+		const results = analyzeLambda(code, file.path);
+
+		logger.info(results);
 	}
 
 	logger.info('Dependencies:', dependencies);

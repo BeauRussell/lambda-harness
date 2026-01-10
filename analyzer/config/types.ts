@@ -102,3 +102,8 @@ export type AnalysisContext = {
 	varMap: VariableMap;
 	envVars: Set<string>;
 }
+
+export type AnalysisResult = {
+  envVars: Set<string>;
+  httpCalls: HttpCall[];
+}
