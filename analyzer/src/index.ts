@@ -2,8 +2,8 @@ import { parseArgs } from "util";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
 import type { FileContext, PackageInfo, Dependency } from "../config/types";
-import { logger } from "./logger";
-import { parseFile } from "./parser";
+import { logger } from "./utils/logger";
+import { parseFile } from "./parser/parser";
 
 // TODO: Getting recursive files does not add the recursive directories to path
 // TODO: Recursive mode also does not exclude node_modules. Maybe it shouldn't?

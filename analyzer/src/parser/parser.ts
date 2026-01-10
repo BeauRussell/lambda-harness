@@ -1,8 +1,8 @@
 import parser from "@babel/parser";
 import traverse, { NodePath } from "@babel/traverse";
 import * as t from "@babel/types";
-import type { FileContext, Dependency } from "../config/types";
-import { logger } from "./logger";
+import type { FileContext, Dependency } from "../../config/types";
+import { logger } from "../utils/logger";
 
 export async function parseFile(fileContext: FileContext): Promise<Dependency[]> {
 	const file = Bun.file(fileContext.path);
