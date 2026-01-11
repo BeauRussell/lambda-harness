@@ -12,8 +12,7 @@ const HTTP_CLIENTS = new Set(['fetch', 'axios', 'got', 'request', 'superagent'])
 
 export function analyzeLambda(code: string, filename: string): AnalysisResult {
   const ast = parse(code, {
-    sourceType: 'module',
-    plugins: ['typescript'],
+    sourceType: 'commonjs'
   });
 
   const ctx: AnalysisContext = {

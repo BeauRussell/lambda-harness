@@ -102,7 +102,7 @@ async function main(path: string | undefined): Promise<void> {
 
 		const results = analyzeLambda(code, file.path);
 
-		logger.info('Analyzer results', { results });
+		logger.info('Analyzer results', { httpCalls: results.httpCalls, envVars: [...results.envVars] });
 	}
 
 	process.exit(0);
