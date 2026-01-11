@@ -102,10 +102,8 @@ async function main(path: string | undefined): Promise<void> {
 
 		const results = analyzeLambda(code, file.path);
 
-		logger.info(results);
+		logger.info('Analyzer results', { results });
 	}
-
-	logger.info('Dependencies:', dependencies);
 
 	process.exit(0);
 }
