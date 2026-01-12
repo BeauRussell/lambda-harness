@@ -1,9 +1,10 @@
 import { parseArgs } from "util";
 import { promises as fs, Dirent } from "fs";
 import * as path from "path";
-import type { FileContext, PackageInfo, Dependency } from "../config/types";
+import type { FileContext, PackageInfo, Dependency, AnalysisResult, Result} from "../config/types";
 import { logger } from "./utils/logger";
 import { analyzeLambda } from "./parser/parser";
+import { logResponse } from "./utils/response";
 
 // TODO: Getting recursive files does not add the recursive directories to path
 // TODO: Recursive mode also does not exclude node_modules. Maybe it shouldn't?
@@ -86,11 +87,17 @@ async function main(path: string | undefined): Promise<void> {
 	}
 
 	const files = await getFilesRecursively(path);
-	const dependencies: Dependency[] = [];
+	const results: Result = {
+		analysis:{
+			envVars: new Set(), 
+			httpCalls: [],
+		},
+		dependencies: [],
+	};
 
 	for (const file of files) {
 		if (file.packageInfo) {
-			dependencies.push(
+			results.dependencies.push(
 				...packagesToDependencies(file.packageInfo.dependencies),
 				...packagesToDependencies(file.packageInfo.peerDependencies),
 				...packagesToDependencies(file.packageInfo.devDependencies),
@@ -100,10 +107,12 @@ async function main(path: string | undefined): Promise<void> {
 		const loadedFile = Bun.file(file.path);
 		const code = await loadedFile.text();
 
-		const results = analyzeLambda(code, file.path);
+		const analysis = analyzeLambda(code, file.path);
 
-		logger.info('Analyzer results', { httpCalls: results.httpCalls, envVars: [...results.envVars] });
+		logger.info('Analyzer results', { file: file.path, httpCalls: analysis.httpCalls, envVars: [...analysis.envVars] });
 	}
+
+	logResponse(results);
 
 	process.exit(0);
 }
