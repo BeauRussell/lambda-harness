@@ -39,7 +39,7 @@ export type PackageInfo = {
 }
 
 export type UrlComponent = {
-	type: 'literal' | 'env' | 'variable' | 'unknown';
+	componentType: 'literal' | 'env' | 'variable' | 'unknown';
 	value: string | undefined;
 	envVar?: string;
 	varName?: string;
@@ -56,11 +56,6 @@ export type HttpCall = {
 	url: ResolvedUrl;
 	method: string;
 	location: string;
-}
-
-export type ParserResult = {
-	envVars: Set<string>;
-	httpCalls: HttpCall[];
 }
 
 export type VariableMap = Map<string, t.Expression>;

@@ -8,42 +8,38 @@ import (
 )
 
 type AnalyzerResult struct {
-	Handler     *HandlerConfig    `json:"handler"`
-	Environment []EnvVarUsage     `json:"environment"`
-	AWSServices []AWSServiceUsage `json:"awsServices"`
-	Tests       []DiscoveredTest  `json:"tests"`
-	Warnings    []string          `json:"warnings"`
+	Analysis AnalysisResult `json:"analysis"`
 	Dependencies []Dependency `json:"dependencies"`
-}
-
-type HandlerConfig struct {
-	File       string `json:"file"`
-	Export     string `json:"export"`
-	Type       string `json:"type"`
-	Confidence string `json:"confidence"`
-	Source     string `json:"source"`
-}
-
-type EnvVarUsage struct {
-	Name         string `json:"name"`
-	HasDefault   bool   `json:"hasDefault"`
-	DefaultValue string `json:"defaultValue,omitempty"`
-}
-
-type AWSServiceUsage struct {
-	Service    string   `json:"service"`
-	Operations []string `json:"operations"`
-	SDKVersion string   `json:"sdkVersion"`
-}
-
-type DiscoveredTest struct {
-	Name    string `json:"name"`
-	Fixture string `json:"fixture"`
 }
 
 type Dependency struct {
 	Name string `json:"name"`
 	Version string `json:"version"`
+}
+
+type HttpCall struct {
+	Url ResolvedUrl `json:"url"`
+	Method string `json:"method"`
+	Location string `json:"location"`
+}
+
+type AnalysisResult struct {
+  EnvVars []string 
+  httpCalls []HttpCall;
+}
+
+type UrlComponent struct {
+	TypeComponent string
+	Value string `json:"value,omitempty"` 
+	EnvVar string `json:"envVar,omitempty"`
+	VarName string `json:"varName,omitempty"`
+}
+
+type ResolvedUrl struct {
+	components []UrlComponent
+	raw string
+	envVars []string
+	isFullyStatic bool
 }
 
 // TODO: Swap this to Docker-based execution

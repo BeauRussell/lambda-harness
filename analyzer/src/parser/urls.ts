@@ -1,4 +1,4 @@
-import type { NodePath, Scope } from '@babel/traverse';
+import type { Scope } from '@babel/traverse';
 import * as t from '@babel/types';
 import type { AnalysisContext, ResolvedUrl, UrlComponent } from '../../config/types';
 import { getEnvVarName, isProcessEnvAccess, unwrapExpression } from '../utils/parse-utils';
@@ -11,7 +11,7 @@ export function resolveExpression(
 ): ResolvedUrl {
 	if (depth > 10) {
 		return {
-			components: [{ type: 'unknown', value: undefined }],
+			components: [{ componentType: 'unknown', value: undefined }],
 			raw: '<max depth>',
 			envVars: [],
 			isFullyStatic: false,
@@ -26,7 +26,7 @@ export function resolveExpression(
 	// String literal: "https://api.example.com"
 	if (t.isStringLiteral(node)) {
 		return {
-			components: [{ type: 'literal', value: node.value }],
+			components: [{ componentType: 'literal', value: node.value }],
 			raw: node.value,
 			envVars: [],
 			isFullyStatic: true,
@@ -56,7 +56,7 @@ export function resolveExpression(
 	// Call expression: getBaseUrl() or url.toString()
 	if (t.isCallExpression(node)) {
 		return {
-			components: [{ type: 'unknown', value: undefined }],
+			components: [{ componentType: 'unknown', value: undefined }],
 			raw: '<function call>',
 			envVars: [],
 			isFullyStatic: false,
@@ -64,7 +64,7 @@ export function resolveExpression(
 	}
 
 	return {
-		components: [{ type: 'unknown', value: undefined }],
+		components: [{ componentType: 'unknown', value: undefined }],
 		raw: '<unknown>',
 		envVars: [],
 		isFullyStatic: false,
@@ -91,7 +91,7 @@ function resolveTemplateLiteral(
 		const quasi = node.quasis[i]!;
 
 		if (quasi.value.cooked) {
-			components.push({ type: 'literal', value: quasi.value.cooked });
+			components.push({ componentType: 'literal', value: quasi.value.cooked });
 			raw += quasi.value.cooked;
 		}
 
@@ -100,7 +100,7 @@ function resolveTemplateLiteral(
 
 			// Skip if it's a TSType node
 			if (!t.isExpression(expr)) {
-				components.push({ type: 'unknown', value: undefined });
+				components.push({ componentType: 'unknown', value: undefined });
 				raw += '<type>';
 				isFullyStatic = false;
 				continue;
@@ -138,13 +138,13 @@ function resolveIdentifier(
 		return {
 			...resolved,
 			components: resolved.components.map((c) =>
-				c.type === 'literal' ? { ...c, type: 'variable' as const, varName: name } : c
+				c.componentType === 'literal' ? { ...c, componentType: 'variable' as const, varName: name } : c
 			),
 		};
 	}
 
 	return {
-		components: [{ type: 'variable', value: undefined, varName: name }],
+		components: [{ componentType: 'variable', value: undefined, varName: name }],
 		raw: `\${${name}}`,
 		envVars: [],
 		isFullyStatic: false,
@@ -162,7 +162,7 @@ function resolveMemberExpression(
 			ctx.envVars.add(envVarName);
 
 			return {
-				components: [{ type: 'env', value: undefined, envVar: envVarName }],
+				components: [{ componentType: 'env', value: undefined, envVar: envVarName }],
 				raw: `\${process.env.${envVarName}}`,
 				envVars: [envVarName],
 				isFullyStatic: false,
@@ -171,7 +171,7 @@ function resolveMemberExpression(
 
 		// Dynamic access: process.env[someVar]
 		return {
-			components: [{ type: 'env', value: undefined }],
+			components: [{ componentType: 'env', value: undefined }],
 			raw: '${process.env.<dynamic>}',
 			envVars: [],
 			isFullyStatic: false,
@@ -179,7 +179,7 @@ function resolveMemberExpression(
 	}
 
 	return {
-		components: [{ type: 'unknown', value: undefined }],
+		components: [{ componentType: 'unknown', value: undefined }],
 		raw: '<member expression>',
 		envVars: [],
 		isFullyStatic: false,
@@ -195,7 +195,7 @@ function resolveBinaryExpression(
 	// PrivateName can't appear in concatenation, but TS doesn't know that
 	if (t.isPrivateName(node.left)) {
 		return {
-			components: [{ type: 'unknown', value: undefined }],
+			components: [{ componentType: 'unknown', value: undefined }],
 			raw: '<private>',
 			envVars: [],
 			isFullyStatic: false,
