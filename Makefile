@@ -15,3 +15,4 @@ dev: test
 clean:
 	rm -rf internal/embedded/analyzer
 	rm -f cmd/lth/analyzer.log
+	go clean -testcache
