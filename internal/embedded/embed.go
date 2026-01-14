@@ -49,7 +49,7 @@ func RunAnalyzer(projectPath string) (*AnalyzerResult, error) {
 		return nil, fmt.Errorf("invalid path: %w", err)
 	}
 
-	cmd := exec.Command("bun", "run", "../../analyzer/src/index.ts", absPath)
+	cmd := exec.Command("bun", "run", "./analyzer/src/index.js", absPath)
 	fmt.Printf("Exec Command: %+v\n", cmd)
 	output, err := cmd.Output()
 	if err != nil {
