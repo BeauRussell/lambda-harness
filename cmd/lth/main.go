@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	docker "github.com/BeauRussell/lambda-harness/internal/docker"
 	embed "github.com/BeauRussell/lambda-harness/internal/embedded"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -54,6 +55,7 @@ func (m CLIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "enter":
 			runTest()
+			docker.RunContainer()
 
 		}
 	}
