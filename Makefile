@@ -6,7 +6,7 @@ analyzer:
 
 # Run Go tests (depends on analyzer build)
 test: analyzer
-	go run cmd/lth/main.go 
+	go run cmd/lth/main.go
 
 # Development mode: build and test
 dev: test
