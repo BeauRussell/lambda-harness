@@ -7,7 +7,12 @@ import (
 	"github.com/moby/moby/client"
 )
 
-func RunContainer() (string, error){
+type RunDetails struct {
+	Image string
+}
+
+func RunContainer(selectedRuns []RunDetails) (string, error){
+	log.Println(selectedRuns)
 	apiClient, err := client.New(client.FromEnv)
 	if err != nil {
 		log.Printf("Failed to create Docker Client: %v\n", err)

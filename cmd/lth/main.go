@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
-	docker "github.com/BeauRussell/lambda-harness/internal/docker"
+	"github.com/BeauRussell/lambda-harness/internal/docker"
 	embed "github.com/BeauRussell/lambda-harness/internal/embedded"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -13,13 +14,14 @@ import (
 type CLIModel struct {
 	NodeVersions []string
 	cursor int
-	selected map[int]struct{}
+	selected map[int]docker.RunDetails
 }
+
 
 func initModel() CLIModel {
 	return CLIModel{
-		NodeVersions: []string{"20.X","22.X","24.X"},
-		selected: make(map[int]struct{}),
+		NodeVersions: []string{"nodejs:20", "nodejs:22", "nodejs:24"},
+		selected: make(map[int]docker.RunDetails),
 	}
 }
 
@@ -50,12 +52,22 @@ func (m CLIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				delete(m.selected, m.cursor)
 			} else {
-				m.selected[m.cursor] = struct{}{}
+				version := m.NodeVersions[m.cursor]
+				if strings.HasPrefix(version, "nodejs") {
+					version = "public.ecr.aws/lambda/" + version
+				} 
+				m.selected[m.cursor] = docker.RunDetails{ Image: version }
 			}
 
 		case "enter":
 			runTest()
-			docker.RunContainer()
+
+			selectedRuns := make([]docker.RunDetails, 0, len(m.selected))
+			for _, details := range m.selected {
+				selectedRuns = append(selectedRuns, details)
+			}
+
+			docker.RunContainer(selectedRuns)
 
 		}
 	}
