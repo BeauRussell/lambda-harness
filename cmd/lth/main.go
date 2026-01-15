@@ -67,7 +67,7 @@ func (m CLIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				selectedRuns = append(selectedRuns, details)
 			}
 
-			docker.RunContainer(selectedRuns)
+			docker.RunContainers(selectedRuns)
 
 		}
 	}
