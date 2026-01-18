@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 )
 
@@ -27,13 +28,13 @@ func RunContainers(selectedRuns []RunDetails) (string, error) {
 	defer apiClient.Close()
 
 	for _, run := range selectedRuns {
-		go BuildContainer(ctx, apiClient, run)
+		go buildContainer(ctx, apiClient, run)
 	}
 
 	return "", nil
 }
 
-func BuildContainer(ctx context.Context, apiClient *client.Client, run RunDetails) error {
+func buildContainer(ctx context.Context, apiClient *client.Client, run RunDetails) error {
 	pullCtx, pullCancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer pullCancel()
 
@@ -50,6 +51,23 @@ func BuildContainer(ctx context.Context, apiClient *client.Client, run RunDetail
 		return err
 	}
 
-	log.Println("DONE")
+	createConfig := &container.Config{
+		Image: run.Image,
+	}
+	createOptions := client.ContainerCreateOptions {
+		Config: createConfig,
+		Name: "lth-test-" + run.Image,
+	}
+	createResponse, err := apiClient.ContainerCreate(pullCtx, createOptions)
+	if err != nil {
+		log.Printf("Failed to create Container %s: %v\n", createOptions.Name, err)
+		return err
+	}
+	log.Printf("Created Container %s\n", createResponse)
+
 	return nil
+}
+
+func runContainer() {
+
 }
