@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -27,11 +28,32 @@ func RunContainers(selectedRuns []RunDetails) (string, error) {
 	}
 	defer apiClient.Close()
 
+	var wg sync.WaitGroup
+	errCh := make(chan error, len(selectedRuns))
 	for _, run := range selectedRuns {
-		go buildContainer(ctx, apiClient, run)
+		wg.Add(1)
+		go func(rd RunDetails) {
+			defer wg.Done()
+			if err := buildContainer(ctx, apiClient, run); err != nil {
+				errCh <- err
+			}
+		}(run)
 	}
 
-	return "", nil
+	wg.Wait()
+	close(errCh)
+
+	var lastErr error
+	for err := range errCh {
+		lastErr = err
+		log.Printf("Container build failed: %v", err)
+	}
+
+	if lastErr != nil {
+		return "", lastErr
+	}
+
+	return "All containers processed", nil
 }
 
 func buildContainer(ctx context.Context, apiClient *client.Client, run RunDetails) error {
