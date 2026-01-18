@@ -63,11 +63,23 @@ func buildContainer(ctx context.Context, apiClient *client.Client, run RunDetail
 		log.Printf("Failed to create Container %s: %v\n", createOptions.Name, err)
 		return err
 	}
-	log.Printf("Created Container %s\n", createResponse)
+
+	err = runContainer(pullCtx, apiClient, createResponse.ID)
+	if err != nil {
+		log.Printf("Failed to run container %s: %v", createResponse.ID, err)
+		return err
+	}
 
 	return nil
 }
 
-func runContainer() {
+func runContainer(ctx context.Context, apiClient *client.Client, containerId string) error {
+	var options client.ContainerStartOptions
+	_, err := apiClient.ContainerStart(ctx, containerId, options)
+	if err != nil {
+		log.Printf("Failed to start container %s: %v", containerId,err)
+		return err
+	}
 
+	return nil
 }
