@@ -2,107 +2,62 @@ package docker
 
 import (
 	"context"
-	"log"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
-	"time"
+	"fmt"
+	"io"
 
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/client"
 )
 
-type RunDetails struct {
-	Image string
-	Name string
+type Service struct {
+	client *client.Client
 }
 
-func RunContainers(selectedRuns []RunDetails) (string, error) {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	apiClient, err := client.New(client.FromEnv)
+func NewService() (*Service, error) {
+	cli, err := client.New(client.FromEnv)
 	if err != nil {
-		log.Printf("Failed to create Docker Client: %v\n", err)
-		return "", err
-	}
-	defer apiClient.Close()
-
-	var wg sync.WaitGroup
-	errCh := make(chan error, len(selectedRuns))
-	for _, run := range selectedRuns {
-		wg.Add(1)
-		go func(rd RunDetails) {
-			defer wg.Done()
-			if err := buildContainer(ctx, apiClient, run); err != nil {
-				errCh <- err
-			}
-		}(run)
+		return nil, fmt.Errorf("Failed to create Docker client: %w", err)
 	}
 
-	wg.Wait()
-	close(errCh)
-
-	var lastErr error
-	for err := range errCh {
-		lastErr = err
-		log.Printf("Container build failed: %v", err)
-	}
-
-	if lastErr != nil {
-		return "", lastErr
-	}
-
-	return "All containers processed", nil
+	return &Service{client: cli}, nil
 }
 
-func buildContainer(ctx context.Context, apiClient *client.Client, run RunDetails) error {
-	containerCtx, containerCancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer containerCancel()
+func (s *Service) Close() error {
+	return s.client.Close()
+}
 
-	pullResponse, err := apiClient.ImagePull(containerCtx, run.Image, client.ImagePullOptions{})
+func (s *Service) PullImage(ctx context.Context, image string) error {
+	pullResponse, err := s.client.ImagePull(ctx, image, client.ImagePullOptions{})
 	if err != nil {
-		log.Printf("Failed to start image pull %s: %v\n", run.Image, err)
-		return err
+		return fmt.Errorf("Failed to start image pull %s: %w", image, err)
 	}
 	defer pullResponse.Close()
 
-	err = pullResponse.Wait(containerCtx)
+	_, err = io.Copy(io.Discard, pullResponse)
 	if err != nil {
-		log.Printf("Failed to pull image %s: %v\n", run.Image, err)
-		return err
-	}
-
-	createConfig := &container.Config{
-		Image: run.Image,
-	}
-	createOptions := client.ContainerCreateOptions {
-		Config: createConfig,
-		Name: run.Name,
-	}
-	createResponse, err := apiClient.ContainerCreate(containerCtx, createOptions)
-	if err != nil {
-		log.Printf("Failed to create Container %s: %v\n", createOptions.Name, err)
-		return err
-	}
-
-	err = runContainer(containerCtx, apiClient, createResponse.ID)
-	if err != nil {
-		log.Printf("Failed to run container %s: %v", createResponse.ID, err)
-		return err
+		return fmt.Errorf("Failed to pull image %s: %w", image, err)
 	}
 
 	return nil
 }
 
-func runContainer(containerCtx context.Context, apiClient *client.Client, containerId string) error {
-	var options client.ContainerStartOptions
-	_, err := apiClient.ContainerStart(containerCtx, containerId, options)
+func (s *Service) CreateContainer(ctx context.Context, name, image string) (string, error) {
+	createOptions := client.ContainerCreateOptions{
+		Config: &container.Config{Image: image},
+	}
+	createResponse, err := s.client.ContainerCreate(ctx, createOptions)
 	if err != nil {
-		log.Printf("Failed to start container %s: %v", containerId,err)
-		return err
+		return "", fmt.Errorf("Failed to create container %s: %w", name, err)
+	}
+	
+	return createResponse.ID, nil
+}
+
+func (s *Service) StartContainer(ctx context.Context, containerID string) error {
+	if _, err := s.client.ContainerStart(ctx, containerID, client.ContainerStartOptions{}); err != nil {
+		return fmt.Errorf("failed to start container %s: %w", containerID, err)
 	}
 
 	return nil
 }
+
