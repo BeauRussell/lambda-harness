@@ -53,10 +53,11 @@ func (m CLIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				delete(m.selected, m.cursor)
 			} else {
 				version := m.NodeVersions[m.cursor]
+				name := strings.ReplaceAll("lth-" + version, ":", "_")
 				if strings.HasPrefix(version, "nodejs") {
 					version = "public.ecr.aws/lambda/" + version
 				} 
-				m.selected[m.cursor] = docker.RunDetails{ Image: version }
+				m.selected[m.cursor] = docker.RunDetails{ Image: version, Name: name } 
 			}
 
 		case "enter":

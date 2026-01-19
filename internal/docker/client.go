@@ -15,6 +15,7 @@ import (
 
 type RunDetails struct {
 	Image string
+	Name string
 }
 
 func RunContainers(selectedRuns []RunDetails) (string, error) {
@@ -57,17 +58,17 @@ func RunContainers(selectedRuns []RunDetails) (string, error) {
 }
 
 func buildContainer(ctx context.Context, apiClient *client.Client, run RunDetails) error {
-	pullCtx, pullCancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer pullCancel()
+	containerCtx, containerCancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer containerCancel()
 
-	pullResponse, err := apiClient.ImagePull(pullCtx, run.Image, client.ImagePullOptions{})
+	pullResponse, err := apiClient.ImagePull(containerCtx, run.Image, client.ImagePullOptions{})
 	if err != nil {
 		log.Printf("Failed to start image pull %s: %v\n", run.Image, err)
 		return err
 	}
 	defer pullResponse.Close()
 
-	err = pullResponse.Wait(pullCtx)
+	err = pullResponse.Wait(containerCtx)
 	if err != nil {
 		log.Printf("Failed to pull image %s: %v\n", run.Image, err)
 		return err
@@ -78,15 +79,15 @@ func buildContainer(ctx context.Context, apiClient *client.Client, run RunDetail
 	}
 	createOptions := client.ContainerCreateOptions {
 		Config: createConfig,
-		Name: "lth-test-" + run.Image,
+		Name: run.Name,
 	}
-	createResponse, err := apiClient.ContainerCreate(pullCtx, createOptions)
+	createResponse, err := apiClient.ContainerCreate(containerCtx, createOptions)
 	if err != nil {
 		log.Printf("Failed to create Container %s: %v\n", createOptions.Name, err)
 		return err
 	}
 
-	err = runContainer(pullCtx, apiClient, createResponse.ID)
+	err = runContainer(containerCtx, apiClient, createResponse.ID)
 	if err != nil {
 		log.Printf("Failed to run container %s: %v", createResponse.ID, err)
 		return err
@@ -95,9 +96,9 @@ func buildContainer(ctx context.Context, apiClient *client.Client, run RunDetail
 	return nil
 }
 
-func runContainer(ctx context.Context, apiClient *client.Client, containerId string) error {
+func runContainer(containerCtx context.Context, apiClient *client.Client, containerId string) error {
 	var options client.ContainerStartOptions
-	_, err := apiClient.ContainerStart(ctx, containerId, options)
+	_, err := apiClient.ContainerStart(containerCtx, containerId, options)
 	if err != nil {
 		log.Printf("Failed to start container %s: %v", containerId,err)
 		return err
